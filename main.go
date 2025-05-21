@@ -2,10 +2,11 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/khafidprayoga/parking-app/internal/server"
-	"github.com/khafidprayoga/parking-app/internal/types"
 	"log"
 	"net"
+
+	"github.com/khafidprayoga/parking-app/internal/server"
+	"github.com/khafidprayoga/parking-app/internal/types"
 )
 
 func main() {
@@ -41,7 +42,11 @@ func main() {
 		}
 
 		// emit data to handler
-		go service.HandleIncomingMsg(data)
+		go func() {
+			if errProcess := service.HandleIncomingMsg(data); errProcess != nil {
+				log.Printf("error processing message: %v", errProcess)
+			}
+		}()
 	}
 
 }
