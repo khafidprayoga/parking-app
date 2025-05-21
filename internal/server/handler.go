@@ -34,7 +34,7 @@ func (srv *ParkingAppServer) HandleIncomingMsg(msg types.Socket) (response strin
 
 		areaId, errParking := srv.service.EnterArea(incomingCarData.PoliceNumber)
 		if errParking != nil {
-			err = fmt.Errorf("failed to enter area %s", areaId)
+			err = fmt.Errorf("failed to enter area %s", errParking.Error())
 			return
 		}
 
