@@ -1,15 +1,14 @@
 package server
 
 import (
+	"encoding/json"
 	"fmt"
-	"github.com/khafidprayoga/parking-app/internal/types"
-	"log"
 	"strconv"
-	"strings"
-	"time"
+
+	"github.com/khafidprayoga/parking-app/internal/types"
 )
 
-func (p *ParkingAppServer) HandleIncomingMsg(msg types.Socket) (err error) {
+func (srv *ParkingAppServer) HandleIncomingMsg(msg types.Socket) (response string, err error) {
 	switch msg.Command {
 	case types.CmdCreateStore:
 		parkingCap, errCv := strconv.Atoi(msg.Data.(string))
@@ -18,50 +17,63 @@ func (p *ParkingAppServer) HandleIncomingMsg(msg types.Socket) (err error) {
 			return
 		}
 
-		if p.service.LotCapacity > 0 {
+		if srv.service.LotCapacity > 0 {
 			err = fmt.Errorf("failed, already initalize the parking lot capacity")
 			return
 		}
 
-		p.service.LotCapacity = parkingCap
-		p.service.Store = make([]*types.Car, parkingCap)
+		srv.service.LotCapacity = parkingCap
+		srv.service.Store = make([]*types.Car, parkingCap)
+
+		response = fmt.Sprintf("success initalize parking lot with %v capacity", parkingCap)
+		return
 	case types.CmdPark:
 		incomingCarData := types.Car{
 			PoliceNumber: msg.Data.(map[string]any)["police_number"].(string),
 		}
 
-		// validate if  car number not already exist on the parking area
-		for _, car := range p.service.Store {
-			if car != nil {
-				if strings.EqualFold(car.PoliceNumber, incomingCarData.PoliceNumber) {
-					err = fmt.Errorf("failed, already parked the parking lot capacity")
-					return
-				}
-			}
+		areaId, errParking := srv.service.EnterArea(incomingCarData.PoliceNumber)
+		if errParking != nil {
+			err = fmt.Errorf("failed to enter area %s", areaId)
+			return
 		}
 
-		for index, car := range p.service.Store {
-			// allocating nearest parking lot from the door gateway
-			if car == nil {
-				p.service.Store[index] = &types.Car{
-					ID:           index + 1,
-					Color:        incomingCarData.Color,
-					PoliceNumber: incomingCarData.PoliceNumber,
-					ParkingAt:    time.Now(),
-					ExitAt:       nil,
-				}
-
-				incomingCarData.ID = index
-				break
-			}
-
-		}
-
-		log.Printf("successfully parked car. with police number %s and SLOT number id %v", incomingCarData.PoliceNumber, incomingCarData.ID)
+		response = fmt.Sprintf(
+			"successfully parked car. with police number %s and SLOT number id %v",
+			incomingCarData.PoliceNumber,
+			areaId,
+		)
+		return
 	case types.CmdLeave:
+		incomingCarData := types.CarDTO{
+			PoliceNumber: msg.Data.(map[string]any)["police_number"].(string),
+			Hours:        int(msg.Data.(map[string]any)["hours"].(float64)),
+		}
+
+		metadata, errLeave := srv.service.LeaveArea(incomingCarData)
+		if errLeave != nil {
+			err = fmt.Errorf("failed to exit area with police id %s", incomingCarData.PoliceNumber)
+			return
+		}
+
+		metaByte, errM := json.Marshal(metadata)
+		if errM != nil {
+			err = fmt.Errorf("failed to marshal metadata")
+			return
+		}
+
+		response = string(metaByte)
+		return
 	case types.CmdStatus:
-		fmt.Println(1)
+		dataBytes, errMarshall := json.Marshal(srv.service)
+		if errMarshall != nil {
+			err = fmt.Errorf("failed to marshall parking data")
+			return
+		}
+
+		response = string(dataBytes)
+		return
 	}
 
-	return nil
+	return "", nil
 }

@@ -20,7 +20,7 @@ func main() {
 	log.Println("listening on port :8080")
 
 	uc := server.NewParkingService()
-	service := server.CreateAppServer(uc)
+	service := server.CreateAppServer(*uc)
 
 	// running backend in background
 	for {
@@ -43,9 +43,20 @@ func main() {
 
 		// emit data to handler
 		go func() {
-			if errProcess := service.HandleIncomingMsg(data); errProcess != nil {
-				log.Printf("error processing message: %v", errProcess)
+			resMsg, errProcess := service.HandleIncomingMsg(data)
+
+			response := types.SocketServerResponse{
+				Status:  types.SocketCallSuccess,
+				Message: resMsg,
 			}
+
+			if errProcess != nil {
+				response.Status = types.SocketCallError
+				response.Message = errProcess.Error()
+			}
+
+			resB, _ := json.Marshal(response)
+			conn.Write(resB)
 		}()
 	}
 

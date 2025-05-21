@@ -3,11 +3,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/khafidprayoga/parking-app/internal/types"
 	"log"
 	"net"
 	"os"
 	"strconv"
+
+	"github.com/khafidprayoga/parking-app/internal/types"
 )
 
 // main to send input from file to running backend services
@@ -40,11 +41,12 @@ func main() {
 	switch command {
 	case types.CmdCreateStore:
 		parkingLotCap := args[0]
+		log.Printf("CLIENT:Creating parking with capacity of %v lot", parkingLotCap)
+
 		if errSendReq := sendRequest(command, parkingLotCap); errSendReq != nil {
 			log.Fatal(errSendReq)
 		}
 
-		log.Printf("CLIENT:Creating parking with capacity of %v lot", parkingLotCap)
 	case types.CmdPark:
 		if errSendReq := sendRequest(command, types.CarDTO{
 			PoliceNumber: args[0],
@@ -91,5 +93,19 @@ func sendRequest(command string, data any) error {
 		return fmt.Errorf("cannot send request: %v", errSend)
 	}
 
+	// reading response
+	buf := make([]byte, 1024)
+	size, errRead := conn.Read(buf)
+	if errRead != nil {
+		return fmt.Errorf("cannot read response: %v", errRead)
+	}
+
+	res := types.SocketServerResponse{}
+	if err := json.Unmarshal(buf[:size], &res); err != nil {
+		return fmt.Errorf("cannot unmarshal response: %v", errSend)
+	}
+	log.Printf("SERVER-RESPONSE: %s\n"+
+		"SERVER-RESPONSE: %s",
+		res.Status, res.Message)
 	return nil
 }
