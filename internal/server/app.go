@@ -4,7 +4,7 @@ type ParkingAppServer struct {
 	service ParkingServiceImpl
 }
 
-func NewParkingAppServer(service ParkingServiceImpl) *ParkingAppServer {
+func CreateAppServer(service ParkingServiceImpl) *ParkingAppServer {
 	return &ParkingAppServer{
 		service: service,
 	}

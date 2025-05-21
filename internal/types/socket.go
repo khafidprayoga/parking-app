@@ -1,6 +1,6 @@
 package types
 
-type CommunicationSocket struct {
-	Command string
-	Data    any
+type Socket struct {
+	Command string `json:"command"`
+	Data    any    `json:"data"`
 }

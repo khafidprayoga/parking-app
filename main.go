@@ -1,26 +1,47 @@
 package main
 
 import (
+	"encoding/json"
+	"github.com/khafidprayoga/parking-app/internal/server"
+	"github.com/khafidprayoga/parking-app/internal/types"
 	"log"
 	"net"
 )
 
 func main() {
 	// init socket
-	ln, err := net.Listen("tcp", ":8080")
+	listener, err := net.Listen("tcp", ":8080")
 	if err != nil {
 		log.Fatalf("error listening on port :8080 with reason %v", err)
 	}
+
+	defer listener.Close()
 	log.Println("listening on port :8080")
+
+	uc := server.NewParkingService()
+	service := server.CreateAppServer(uc)
 
 	// running backend in background
 	for {
-		conn, errAcc := ln.Accept()
+		conn, errAcc := listener.Accept()
 		if errAcc != nil {
 			log.Printf("error accepting connection: %v", errAcc)
 			continue
 		}
 
+		buf := make([]byte, 1024)
+		n, err := conn.Read(buf)
+		if err != nil {
+			log.Printf("error reading from connection: %v", err)
+		}
+
+		data := types.Socket{}
+		if err := json.Unmarshal(buf[:n], &data); err != nil {
+			log.Printf("error unmarshalling from connection: %v", err)
+		}
+
+		// emit data to handler
+		go service.HandleIncomingMsg(data)
 	}
 
 }
