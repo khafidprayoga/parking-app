@@ -6,8 +6,6 @@ tasks:
     cmds:
       - echo "Building parking-app..."
       - go build -o bin/parking-app cmd/parser.go
-      - echo "Building server binary..."
-      - go build -o bin/server main.go
       - echo "Build completed!"
 
   clean:
