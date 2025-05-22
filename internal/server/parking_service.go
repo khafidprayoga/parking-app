@@ -19,6 +19,12 @@ type ParkingServiceImpl struct {
 	tx          map[string]int `json:"-"`
 }
 
+func NewParkingService() *ParkingServiceImpl {
+	return &ParkingServiceImpl{
+		tx: make(map[string]int),
+	}
+}
+
 func (p *ParkingServiceImpl) Status() (_ []byte, err error) {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
@@ -122,7 +128,7 @@ func (p *ParkingServiceImpl) LeaveArea(req types.CarDTO) (exitedCar types.Car, e
 	start := carDetail.ParkingAt
 	end := start.Add(time.Duration(req.Hours) * time.Hour)
 	carDetail.ExitAt = &end
-	carDetail.Cost = 50.0
+	carDetail.Cost = p.calculateCost(req.Hours)
 
 	// pay the tx cost
 	p.pay(req.GetPoliceNumber())
@@ -135,12 +141,6 @@ func (p *ParkingServiceImpl) LeaveArea(req types.CarDTO) (exitedCar types.Car, e
 	return
 }
 
-func NewParkingService() *ParkingServiceImpl {
-	return &ParkingServiceImpl{
-		tx: make(map[string]int),
-	}
-}
-
 func (p *ParkingServiceImpl) pay(policeNumber string) {
 	// on existing tx book history
 	if val, ok := p.tx[policeNumber]; ok {
@@ -151,4 +151,16 @@ func (p *ParkingServiceImpl) pay(policeNumber string) {
 
 	// new member
 	p.tx[policeNumber] = 1
+}
+
+func (p *ParkingServiceImpl) calculateCost(hours int) float64 {
+	const baseCost = 10
+	const baseCostMinHours = 2
+	if hours <= baseCostMinHours {
+		return baseCost
+	}
+
+	extraHours := hours - 2
+
+	return float64(baseCost + (extraHours * baseCost))
 }
