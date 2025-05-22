@@ -29,6 +29,9 @@ func (p *ParkingServiceImpl) Status() (_ []byte, err error) {
 		return
 	}
 
+	// stub: simulating deadline for conn lifetime
+	//time.Sleep(10 * time.Second)
+
 	return dataBytes, nil
 }
 
