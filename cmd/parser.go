@@ -3,10 +3,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/google/uuid"
 	"log"
 	"net"
 	"os"
 	"strconv"
+	"strings"
 
 	bootstrap "github.com/khafidprayoga/parking-app/internal/boot"
 
@@ -18,7 +20,7 @@ func main() {
 
 	defaultMsg := fmt.Sprintf(
 		"Parking App Service CLI:\n"+
-			"\nExample: `parking-app create_parking_lot 12`\n\n"+
+			"\nExample: `EXAMPLE`\n\n"+
 			"available commands:\n"+
 			"\t%s => start parking app server socket at :8080\n"+
 			"\t%s {lotCapacity:int} => for initialize parking lot size\n"+
@@ -31,7 +33,9 @@ func main() {
 		types.CmdPark,
 		types.CmdLeave,
 		types.CmdStatus)
+
 	if len(os.Args) < 2 {
+		defaultMsg = strings.Replace(defaultMsg, "EXAMPLE", fmt.Sprintf("parking-app %s 12", types.CmdCreateStore), -1)
 		fmt.Println(defaultMsg)
 		return
 	}
@@ -41,6 +45,7 @@ func main() {
 
 	// on check server state
 	if command != types.CmdStatus && command != types.CmdServe && len(os.Args) < 3 {
+		defaultMsg = strings.Replace(defaultMsg, "EXAMPLE", fmt.Sprintf("parking-app %s 12", types.CmdCreateStore), -1)
 		log.Fatalln(defaultMsg)
 	}
 
@@ -49,20 +54,40 @@ func main() {
 		log.Println("Starting Parking App Server")
 		bootstrap.StartApp()
 	case types.CmdCreateStore:
+		if len(args) == 0 {
+			log.Printf("lot capacity not specified")
+			defaultMsg = strings.Replace(defaultMsg, "EXAMPLE", fmt.Sprintf("parking-app %s 12", types.CmdCreateStore), -1)
+			log.Println(defaultMsg)
+			return
+		}
+
 		parkingLotCap := args[0]
 		log.Printf("CLIENT:Creating parking with capacity of %v lot", parkingLotCap)
 
 		if errSendReq := sendRequest(command, parkingLotCap); errSendReq != nil {
 			log.Fatal(errSendReq)
 		}
-
 	case types.CmdPark:
+		if len(args) == 0 {
+			log.Printf("police number on car not specified")
+			defaultMsg = strings.Replace(defaultMsg, "EXAMPLE", fmt.Sprintf("parking-app %s KA-01-HH-270", types.CmdPark), -1)
+			log.Println(defaultMsg)
+			return
+		}
+
 		if errSendReq := sendRequest(command, types.CarDTO{
 			PoliceNumber: args[0],
 		}); errSendReq != nil {
 			log.Fatal(errSendReq)
 		}
 	case types.CmdLeave:
+		if len(args) < 2 {
+			log.Printf("hours cost not specified")
+			defaultMsg = strings.Replace(defaultMsg, "EXAMPLE", fmt.Sprintf("parking-app %s KA-01-HH-270 2", types.CmdLeave), -1)
+			log.Println(defaultMsg)
+			return
+		}
+
 		durationInHours, errParseDur := strconv.Atoi(args[1])
 		if errParseDur != nil {
 			log.Fatal(errParseDur)
@@ -78,6 +103,7 @@ func main() {
 		if errSendReq := sendRequest(command, nil); errSendReq != nil {
 			log.Fatal(errSendReq)
 		}
+
 	default:
 		log.Fatalln(defaultMsg)
 	}
@@ -90,8 +116,9 @@ func sendRequest(command string, data any) error {
 	}
 
 	reqBytes, errMarshall := json.Marshal(types.Socket{
-		Command: command,
-		Data:    data,
+		Command:    command,
+		Data:       data,
+		XRequestId: uuid.NewString(),
 	})
 	if errMarshall != nil {
 		return fmt.Errorf("cannot marshal json: %v", errMarshall)

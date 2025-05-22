@@ -1,12 +1,13 @@
 package types
 
 type Socket struct {
-	Command string `json:"command"`
-	Data    any    `json:"data"`
+	Command    string `json:"command"`
+	Data       any    `json:"data"`
+	XRequestId string `json:"x_request_id"`
 }
 
 const (
-	SocketCallSuccess = "SUCCESS"
+	SocketCallSuccess = "OK"
 	SocketCallError   = "ERROR"
 )
 

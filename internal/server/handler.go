@@ -28,11 +28,12 @@ func (srv *ParkingAppServer) HandleIncomingMsg(msg types.Socket) (response strin
 		response = fmt.Sprintf("success initalize parking lot with %v capacity", parkingCap)
 		return
 	case types.CmdPark:
-		incomingCarData := types.Car{
+		incomingCarData := types.CarDTO{
+			RequestId:    msg.XRequestId,
 			PoliceNumber: msg.Data.(map[string]any)["police_number"].(string),
 		}
 
-		areaId, errParking := srv.service.EnterArea(incomingCarData.PoliceNumber)
+		areaId, errParking := srv.service.EnterArea(incomingCarData)
 		if errParking != nil {
 			err = fmt.Errorf("failed to enter area %s", errParking.Error())
 			return

@@ -8,6 +8,8 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/khafidprayoga/parking-app/internal/server"
 	"github.com/khafidprayoga/parking-app/internal/types"
 )
@@ -57,6 +59,20 @@ func StartApp() {
 					log.Printf("error unmarshalling from connection: %v", err)
 					return
 				}
+
+				id, e := uuid.Parse(data.XRequestId)
+
+				if e != nil {
+					// override invalid uuid or empty uuid
+					id = uuid.New()
+				}
+
+				log.Printf(
+					"Handling Request with Id: %v Command: %v At: %v \n",
+					id.String(),
+					data.Command,
+					time.Now().Format(time.RFC3339),
+				)
 				resMsg, errProcess := service.HandleIncomingMsg(data)
 
 				response := types.SocketServerResponse{

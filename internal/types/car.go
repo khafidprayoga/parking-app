@@ -3,7 +3,7 @@ package types
 import "time"
 
 type Car struct {
-	Id           int        `json:"id"`
+	Id           string     `json:"id"`
 	Color        string     `json:"color"`
 	PoliceNumber string     `json:"police_number"`
 	ParkingAt    time.Time  `json:"parking_at"`
@@ -12,7 +12,7 @@ type Car struct {
 }
 
 type CarDTO struct {
+	RequestId    string `json:"request_id"`
 	PoliceNumber string `json:"police_number"`
-
-	Hours int `json:"hours"`
+	Hours        int    `json:"hours,omitempty"`
 }

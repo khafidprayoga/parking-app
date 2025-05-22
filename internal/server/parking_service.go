@@ -14,12 +14,12 @@ type ParkingServiceImpl struct {
 	Revenue     float64      `json:"revenue"`
 }
 
-func (p *ParkingServiceImpl) EnterArea(policeNumber string) (areaId int, err error) {
+func (p *ParkingServiceImpl) EnterArea(request types.CarDTO) (areaId int, err error) {
 
 	// validate if  car number not already exist on the parking area
 	for _, car := range p.Store {
 		if car != nil {
-			if strings.EqualFold(car.PoliceNumber, policeNumber) {
+			if strings.EqualFold(car.PoliceNumber, request.PoliceNumber) {
 				err = fmt.Errorf("failed, already parked the parking lot capacity")
 				return
 			}
@@ -31,8 +31,8 @@ func (p *ParkingServiceImpl) EnterArea(policeNumber string) (areaId int, err err
 		if car == nil {
 			id := index + 1
 			p.Store[index] = &types.Car{
-				Id:           id,
-				PoliceNumber: policeNumber,
+				Id:           request.RequestId,
+				PoliceNumber: request.PoliceNumber,
 				ParkingAt:    time.Now(),
 				ExitAt:       nil,
 			}

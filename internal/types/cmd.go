@@ -6,4 +6,5 @@ const (
 	CmdPark        string = "park"
 	CmdLeave       string = "leave"
 	CmdStatus      string = "status"
+	CmdImport      string = "import"
 )
