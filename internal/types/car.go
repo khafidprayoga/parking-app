@@ -1,6 +1,9 @@
 package types
 
-import "time"
+import (
+	"strings"
+	"time"
+)
 
 type Car struct {
 	Id           string     `json:"id"`
@@ -16,4 +19,8 @@ type CarDTO struct {
 	RequestId    string `json:"request_id"`
 	PoliceNumber string `json:"police_number"`
 	Hours        int    `json:"hours,omitempty"`
+}
+
+func (c CarDTO) GetPoliceNumber() string {
+	return strings.ToUpper(c.PoliceNumber)
 }

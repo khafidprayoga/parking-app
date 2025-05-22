@@ -4,22 +4,34 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/khafidprayoga/parking-app/internal/types"
 )
 
 type ParkingServiceImpl struct {
-	lotCapacity int          `json:"lot_capacity"`
-	store       []*types.Car `json:"store"`
-	revenue     float64      `json:"revenue"`
+	mu sync.RWMutex
+
+	lotCapacity int            `json:"lot_capacity"`
+	store       []*types.Car   `json:"store"`
+	revenue     float64        `json:"revenue"`
+	tx          map[string]int `json:"-"`
 }
 
 func (p *ParkingServiceImpl) Status() (_ []byte, err error) {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+
+	countAllTx := 0
+	for _, perCarTxHistory := range p.tx {
+		countAllTx += perCarTxHistory
+	}
+
 	state := types.AppStatus{
 		Revenue:            p.revenue,
 		LotParkingCapacity: p.lotCapacity,
-		TxCount:            100_0,
+		TxCount:            countAllTx,
 		CarList:            p.store,
 	}
 
@@ -36,6 +48,8 @@ func (p *ParkingServiceImpl) Status() (_ []byte, err error) {
 }
 
 func (p *ParkingServiceImpl) OpenParkingArea(parkingCap int) (err error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
 
 	if p.lotCapacity > 0 {
 		err = fmt.Errorf("failed, already initalize the parking lot capacity")
@@ -49,6 +63,8 @@ func (p *ParkingServiceImpl) OpenParkingArea(parkingCap int) (err error) {
 }
 
 func (p *ParkingServiceImpl) EnterArea(request types.CarDTO) (areaId int, err error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
 
 	// validate if  car number not already exist on the parking area
 	for _, car := range p.store {
@@ -64,10 +80,11 @@ func (p *ParkingServiceImpl) EnterArea(request types.CarDTO) (areaId int, err er
 		// allocating nearest parking lot from the door gateway
 		if car == nil {
 			id := index + 1
+
 			p.store[index] = &types.Car{
 				Id:           request.RequestId,
 				AreaNumber:   id,
-				PoliceNumber: request.PoliceNumber,
+				PoliceNumber: request.GetPoliceNumber(),
 				ParkingAt:    time.Now(),
 				ExitAt:       nil,
 			}
@@ -81,6 +98,9 @@ func (p *ParkingServiceImpl) EnterArea(request types.CarDTO) (areaId int, err er
 }
 
 func (p *ParkingServiceImpl) LeaveArea(req types.CarDTO) (exitedCar types.Car, err error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
 	carDetail := types.Car{}
 	carIndex := -1
 
@@ -104,6 +124,9 @@ func (p *ParkingServiceImpl) LeaveArea(req types.CarDTO) (exitedCar types.Car, e
 	carDetail.ExitAt = &end
 	carDetail.Cost = 50.0
 
+	// pay the tx cost
+	p.pay(req.GetPoliceNumber())
+
 	// flush
 	p.revenue = p.revenue + carDetail.Cost
 	p.store[carIndex] = nil
@@ -113,10 +136,19 @@ func (p *ParkingServiceImpl) LeaveArea(req types.CarDTO) (exitedCar types.Car, e
 }
 
 func NewParkingService() *ParkingServiceImpl {
-	return &ParkingServiceImpl{}
+	return &ParkingServiceImpl{
+		tx: make(map[string]int),
+	}
 }
 
-func (p *ParkingServiceImpl) pay() {
-	// todo
+func (p *ParkingServiceImpl) pay(policeNumber string) {
+	// on existing tx book history
+	if val, ok := p.tx[policeNumber]; ok {
+		txCount := val + 1
+		p.tx[policeNumber] = txCount
+		return
+	}
 
+	// new member
+	p.tx[policeNumber] = 1
 }

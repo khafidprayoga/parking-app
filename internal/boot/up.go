@@ -60,10 +60,10 @@ func StartApp() {
 		log.Println(errCloseTcp)
 	}
 
-	log.Println("shutting down app in 5s")
+	log.Println("shutting down app in a few seconds")
 	ticker := time.NewTicker(1 * time.Second)
 
-	for x := 0; x < 5; x++ {
+	for x := 0; x < 3; x++ {
 		<-ticker.C
 		fmt.Printf(".")
 	}
