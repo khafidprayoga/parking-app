@@ -1,10 +1,12 @@
 package server
 
+import "github.com/khafidprayoga/parking-app/contract"
+
 type ParkingAppServer struct {
-	service ParkingServiceImpl
+	service contract.IParkingUseCase
 }
 
-func CreateAppServer(service ParkingServiceImpl) *ParkingAppServer {
+func CreateAppServer(service contract.IParkingUseCase) *ParkingAppServer {
 	return &ParkingAppServer{
 		service: service,
 	}

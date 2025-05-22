@@ -2,10 +2,13 @@ package boot
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"log"
 	"net"
 	"os"
 	"os/signal"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -21,11 +24,10 @@ func StartApp() {
 		log.Fatalf("error listening on port :8080 with reason %v", err)
 	}
 
-	defer listener.Close()
 	log.Println("listening on port :8080")
 
 	uc := server.NewParkingService()
-	service := server.CreateAppServer(*uc)
+	service := server.CreateAppServer(uc)
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)
@@ -36,6 +38,13 @@ func StartApp() {
 			// handling incoming request
 			conn, errAcc := listener.Accept()
 			if errAcc != nil {
+				errMsg := errors.Unwrap(errAcc)
+				if strings.Contains(errMsg.Error(), "close") {
+					// exit on closed server (reject request)
+					log.Println("server is going to shutdown, exit request listener")
+					return
+				}
+
 				log.Printf("error accepting connection: %v", errAcc)
 				continue
 			}
@@ -45,7 +54,12 @@ func StartApp() {
 
 			// emit data to service
 			go func(conn net.Conn) {
-				defer conn.Close()
+				defer func() {
+					if r := recover(); r != nil {
+						log.Printf("panic recovered in conn handler: %v", r)
+					}
+					conn.Close()
+				}()
 
 				buf := make([]byte, 1024)
 				n, err := conn.Read(buf)
@@ -85,7 +99,11 @@ func StartApp() {
 					response.Message = errProcess.Error()
 				}
 
-				resB, _ := json.Marshal(response)
+				resB, errM := json.Marshal(response)
+				if errM != nil {
+					log.Printf("error reading from connection: %v", err)
+					return
+				}
 				conn.Write(resB)
 			}(conn)
 		}
@@ -93,5 +111,18 @@ func StartApp() {
 
 	// watch shutdown signal
 	<-quit
-	log.Println("shutting down app")
+	errCloseTcp := listener.Close()
+	if errCloseTcp != nil {
+		log.Println(errCloseTcp)
+	}
+
+	log.Println("shutting down app in 5s")
+	ticker := time.NewTicker(1 * time.Second)
+
+	for x := 0; x < 5; x++ {
+		<-ticker.C
+		fmt.Printf(".")
+	}
+	ticker.Stop()
+	os.Exit(0)
 }

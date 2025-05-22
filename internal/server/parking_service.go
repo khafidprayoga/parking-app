@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -9,15 +10,45 @@ import (
 )
 
 type ParkingServiceImpl struct {
-	LotCapacity int          `json:"lot_capacity"`
-	Store       []*types.Car `json:"store"`
-	Revenue     float64      `json:"revenue"`
+	lotCapacity int          `json:"lot_capacity"`
+	store       []*types.Car `json:"store"`
+	revenue     float64      `json:"revenue"`
+}
+
+func (p *ParkingServiceImpl) Status() (_ []byte, err error) {
+	state := types.AppStatus{
+		Revenue:            p.revenue,
+		LotParkingCapacity: p.lotCapacity,
+		TxCount:            100_0,
+		CarList:            p.store,
+	}
+
+	dataBytes, errMarshall := json.Marshal(state)
+	if errMarshall != nil {
+		err = fmt.Errorf("failed to marshall parking data")
+		return
+	}
+
+	return dataBytes, nil
+}
+
+func (p *ParkingServiceImpl) OpenParkingArea(parkingCap int) (err error) {
+
+	if p.lotCapacity > 0 {
+		err = fmt.Errorf("failed, already initalize the parking lot capacity")
+		return
+	}
+
+	p.lotCapacity = parkingCap
+	p.store = make([]*types.Car, parkingCap)
+
+	return
 }
 
 func (p *ParkingServiceImpl) EnterArea(request types.CarDTO) (areaId int, err error) {
 
 	// validate if  car number not already exist on the parking area
-	for _, car := range p.Store {
+	for _, car := range p.store {
 		if car != nil {
 			if strings.EqualFold(car.PoliceNumber, request.PoliceNumber) {
 				err = fmt.Errorf("failed, already parked the parking lot capacity")
@@ -26,12 +57,13 @@ func (p *ParkingServiceImpl) EnterArea(request types.CarDTO) (areaId int, err er
 		}
 	}
 
-	for index, car := range p.Store {
+	for index, car := range p.store {
 		// allocating nearest parking lot from the door gateway
 		if car == nil {
 			id := index + 1
-			p.Store[index] = &types.Car{
+			p.store[index] = &types.Car{
 				Id:           request.RequestId,
+				AreaNumber:   id,
 				PoliceNumber: request.PoliceNumber,
 				ParkingAt:    time.Now(),
 				ExitAt:       nil,
@@ -49,7 +81,7 @@ func (p *ParkingServiceImpl) LeaveArea(req types.CarDTO) (exitedCar types.Car, e
 	carDetail := types.Car{}
 	carIndex := -1
 
-	for i, car := range p.Store {
+	for i, car := range p.store {
 		if car != nil {
 			if strings.EqualFold(car.PoliceNumber, req.PoliceNumber) {
 				carDetail = *car
@@ -70,8 +102,8 @@ func (p *ParkingServiceImpl) LeaveArea(req types.CarDTO) (exitedCar types.Car, e
 	carDetail.Cost = 50.0
 
 	// flush
-	p.Revenue = p.Revenue + carDetail.Cost
-	p.Store[carIndex] = nil
+	p.revenue = p.revenue + carDetail.Cost
+	p.store[carIndex] = nil
 
 	exitedCar = carDetail
 	return

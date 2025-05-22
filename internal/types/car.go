@@ -4,6 +4,7 @@ import "time"
 
 type Car struct {
 	Id           string     `json:"id"`
+	AreaNumber   int        `json:"area_number"`
 	Color        string     `json:"color"`
 	PoliceNumber string     `json:"police_number"`
 	ParkingAt    time.Time  `json:"parking_at"`

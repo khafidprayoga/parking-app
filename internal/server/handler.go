@@ -17,13 +17,11 @@ func (srv *ParkingAppServer) HandleIncomingMsg(msg types.Socket) (response strin
 			return
 		}
 
-		if srv.service.LotCapacity > 0 {
-			err = fmt.Errorf("failed, already initalize the parking lot capacity")
+		errOpen := srv.service.OpenParkingArea(parkingCap)
+		if err != nil {
+			err = fmt.Errorf("failed to open parking area: %s", errOpen.Error())
 			return
 		}
-
-		srv.service.LotCapacity = parkingCap
-		srv.service.Store = make([]*types.Car, parkingCap)
 
 		response = fmt.Sprintf("success initalize parking lot with %v capacity", parkingCap)
 		return
@@ -66,9 +64,9 @@ func (srv *ParkingAppServer) HandleIncomingMsg(msg types.Socket) (response strin
 		response = string(metaByte)
 		return
 	case types.CmdStatus:
-		dataBytes, errMarshall := json.Marshal(srv.service)
-		if errMarshall != nil {
-			err = fmt.Errorf("failed to marshall parking data")
+		dataBytes, errGetStatus := srv.service.Status()
+		if errGetStatus != nil {
+			err = fmt.Errorf("failed to parking app status %s", errGetStatus.Error())
 			return
 		}
 
