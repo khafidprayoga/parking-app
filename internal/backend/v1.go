@@ -1,4 +1,4 @@
-package server
+package backend
 
 import (
 	"encoding/json"
@@ -10,7 +10,7 @@ import (
 	"github.com/khafidprayoga/parking-app/internal/types"
 )
 
-type ParkingServiceImpl struct {
+type ParkingServiceV1 struct {
 	mu sync.RWMutex
 
 	lotCapacity int            `json:"lot_capacity"`
@@ -19,13 +19,13 @@ type ParkingServiceImpl struct {
 	tx          map[string]int `json:"-"`
 }
 
-func NewParkingService() *ParkingServiceImpl {
-	return &ParkingServiceImpl{
+func NewParkingService() *ParkingServiceV1 {
+	return &ParkingServiceV1{
 		tx: make(map[string]int),
 	}
 }
 
-func (p *ParkingServiceImpl) Status() (_ []byte, err error) {
+func (p *ParkingServiceV1) Status() (_ []byte, err error) {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 
@@ -53,9 +53,14 @@ func (p *ParkingServiceImpl) Status() (_ []byte, err error) {
 	return dataBytes, nil
 }
 
-func (p *ParkingServiceImpl) OpenParkingArea(parkingCap int) (err error) {
+func (p *ParkingServiceV1) OpenParkingArea(parkingCap int) (err error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
+
+	if parkingCap < 1 {
+		err = fmt.Errorf("parking cap must be at least 1")
+		return
+	}
 
 	if p.lotCapacity > 0 {
 		err = fmt.Errorf("failed, already initalize the parking lot capacity")
@@ -68,9 +73,14 @@ func (p *ParkingServiceImpl) OpenParkingArea(parkingCap int) (err error) {
 	return
 }
 
-func (p *ParkingServiceImpl) EnterArea(request types.CarDTO) (areaId int, err error) {
+func (p *ParkingServiceV1) EnterArea(request types.CarDTO) (areaId int, err error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
+
+	if len(request.PoliceNumber) == 0 {
+		err = fmt.Errorf("failed, police number is empty")
+		return
+	}
 
 	// validate if  car number not already exist on the parking area
 	for _, car := range p.store {
@@ -105,10 +115,14 @@ func (p *ParkingServiceImpl) EnterArea(request types.CarDTO) (areaId int, err er
 	return
 }
 
-func (p *ParkingServiceImpl) LeaveArea(req types.CarDTO) (exitedCar types.Car, err error) {
+func (p *ParkingServiceV1) LeaveArea(req types.CarDTO) (exitedCar types.Car, err error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
+	if req.Hours < 1 {
+		err = fmt.Errorf("failed, parking must be at least 1 hour")
+		return
+	}
 	carDetail := types.Car{}
 	carIndex := -1
 
@@ -143,7 +157,7 @@ func (p *ParkingServiceImpl) LeaveArea(req types.CarDTO) (exitedCar types.Car, e
 	return
 }
 
-func (p *ParkingServiceImpl) pay(policeNumber string) {
+func (p *ParkingServiceV1) pay(policeNumber string) {
 	// on existing tx book history
 	if val, ok := p.tx[policeNumber]; ok {
 		txCount := val + 1
@@ -155,7 +169,7 @@ func (p *ParkingServiceImpl) pay(policeNumber string) {
 	p.tx[policeNumber] = 1
 }
 
-func (p *ParkingServiceImpl) calculateCost(hours int) float64 {
+func (p *ParkingServiceV1) calculateCost(hours int) float64 {
 	const baseCost = 10
 	const baseCostMinHours = 2
 	if hours <= baseCostMinHours {

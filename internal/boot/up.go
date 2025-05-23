@@ -3,6 +3,7 @@ package boot
 import (
 	"errors"
 	"fmt"
+	"github.com/khafidprayoga/parking-app/internal/backend"
 	"log"
 	"net"
 	"os"
@@ -22,7 +23,7 @@ func StartApp() {
 
 	log.Printf("Parking App Server %s is listening on port :8080\n", AppConfig.AppVersion)
 
-	uc := server.NewParkingService()
+	uc := backend.NewParkingService()
 	service := server.CreateAppServer(uc)
 
 	quit := make(chan os.Signal, 1)
