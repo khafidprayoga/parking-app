@@ -7,5 +7,5 @@ import (
 
 var AppConfig = types.AppConfig{
 	ConnLifetime: 10 * time.Second,
-	AppVersion:   "v0.0.1",
+	AppVersion:   "v0.1.0",
 }
