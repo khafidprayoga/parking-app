@@ -96,10 +96,12 @@ func (p *ParkingServiceImpl) EnterArea(request types.CarDTO) (areaId int, err er
 			}
 
 			areaId = id
-			break
+			return areaId, nil
 		}
 	}
 
+	// default state when loop is not returned immediately
+	err = fmt.Errorf("parking lot capacity is full")
 	return
 }
 
@@ -121,7 +123,7 @@ func (p *ParkingServiceImpl) LeaveArea(req types.CarDTO) (exitedCar types.Car, e
 	}
 
 	if carIndex < 0 {
-		err = fmt.Errorf("failed, car with police number %s does not exist", req.PoliceNumber)
+		err = fmt.Errorf("car with police number %s does not exist", req.PoliceNumber)
 		return
 	}
 

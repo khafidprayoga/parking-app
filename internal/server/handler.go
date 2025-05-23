@@ -1,7 +1,6 @@
 package server
 
 import (
-	"encoding/json"
 	"fmt"
 	"strconv"
 
@@ -33,7 +32,7 @@ func (srv *ParkingAppServer) HandleIncomingMsg(msg types.Socket) (response strin
 
 		areaId, errParking := srv.service.EnterArea(incomingCarData)
 		if errParking != nil {
-			err = fmt.Errorf("failed to enter area %s", errParking.Error())
+			err = fmt.Errorf("failed to enter area, %s", errParking.Error())
 			return
 		}
 
@@ -51,17 +50,16 @@ func (srv *ParkingAppServer) HandleIncomingMsg(msg types.Socket) (response strin
 
 		metadata, errLeave := srv.service.LeaveArea(incomingCarData)
 		if errLeave != nil {
-			err = fmt.Errorf("failed to exit area with police id %s", incomingCarData.PoliceNumber)
+			err = fmt.Errorf("failed to exit area with police id %s, %s", incomingCarData.PoliceNumber, errLeave.Error())
 			return
 		}
 
-		metaByte, errM := json.Marshal(metadata)
-		if errM != nil {
-			err = fmt.Errorf("failed to marshal metadata")
-			return
-		}
-
-		response = string(metaByte)
+		response = fmt.Sprintf(
+			"successfully leave car. with police number %s and total hours elapsed  %v on area number %d",
+			metadata.PoliceNumber,
+			incomingCarData.Hours,
+			metadata.AreaNumber,
+		)
 		return
 	case types.CmdStatus:
 		dataBytes, errGetStatus := srv.service.Status()
