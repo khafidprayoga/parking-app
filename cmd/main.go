@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/khafidprayoga/parking-app/internal/extra"
@@ -131,6 +132,10 @@ func main() {
 func sendRequest(command string, data any) error {
 	conn, errDial := net.Dial("tcp", "localhost:8080")
 	if errDial != nil {
+		e := errors.Unwrap(errDial)
+		if strings.Contains(e.Error(), "No connection could be made") {
+			return fmt.Errorf("application is down start the server first! with command `%s`", "parking-app serve")
+		}
 		return fmt.Errorf("cannot connect to server: %v", errDial)
 	}
 
