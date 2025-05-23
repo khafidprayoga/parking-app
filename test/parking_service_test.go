@@ -16,7 +16,7 @@ type TestParkingService struct {
 
 func setupTestParkingService() *TestParkingService {
 	return &TestParkingService{
-		service: backend.NewParkingService(),
+		service: backend.NewParkingServiceBTree(),
 	}
 }
 

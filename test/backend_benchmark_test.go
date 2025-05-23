@@ -120,5 +120,5 @@ func BenchmarkParkingUseCase_Parallel(b *testing.B) {
 
 // getParkingUseCase adalah helper function untuk mendapatkan implementasi IParkingUseCase
 func getParkingUseCase() contract.IParkingUseCase {
-	return backend.NewParkingService()
+	return backend.NewParkingServiceBTree()
 }
