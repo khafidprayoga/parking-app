@@ -57,7 +57,15 @@ func main() {
 	switch command {
 	case types.CmdServe:
 		log.Println("Starting Parking App Server")
-		bootstrap.StartApp()
+		version := types.V1
+
+		if len(param) > 0 {
+			if param[0] == "--btree" {
+				version = types.V1BTree
+			}
+		}
+
+		bootstrap.StartApp(version)
 	case types.CmdCreateStore:
 		if len(param) == 0 {
 			log.Printf("lot capacity not specified")
