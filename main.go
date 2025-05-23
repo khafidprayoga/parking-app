@@ -35,8 +35,9 @@ func main() {
 		types.CmdCreateStore,
 		types.CmdPark,
 		types.CmdLeave,
+		types.CmdStatus,
 		types.CmdImport,
-		types.CmdStatus)
+	)
 
 	if len(os.Args) < 2 {
 		defaultMsg = strings.Replace(defaultMsg, "EXAMPLE", fmt.Sprintf("parking-app %s 12", types.CmdCreateStore), -1)
