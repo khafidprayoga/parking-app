@@ -13,4 +13,14 @@ tasks:
     cmds:
       - echo "Cleaning build artifacts..."
       - rm -rf bin/
-      - echo "Clean completed!" 
+      - echo "Clean completed!"
+
+  bench:
+    desc: benchmark backend implementation in multiple version
+    cmds:
+      - go test -race -bench=. -benchmem ./test
+
+  coverage-check:
+    desc: check backend implementation code coverage
+    cmds:
+      - go test -coverpkg=github.com/khafidprayoga/parking-app/internal/backend -covermode=atomic -coverprofile=coverage.out ./test/...
