@@ -29,11 +29,13 @@ func main() {
 			"\t%s {carNumber:string} => parking a car\n"+
 			"\t%s {carNumber:string} {hours:int}  => for a car to exit parking area\n"+
 			"\t%s => view status of the parking area app service\n"+
+			"\t%s => to import a file with instruction list\n"+
 			"\thelp  => show this message",
 		types.CmdServe,
 		types.CmdCreateStore,
 		types.CmdPark,
 		types.CmdLeave,
+		types.CmdImport,
 		types.CmdStatus)
 
 	if len(os.Args) < 2 {
