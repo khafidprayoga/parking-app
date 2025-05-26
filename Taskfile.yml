@@ -5,7 +5,7 @@ tasks:
     desc: Build all binaries
     cmds:
       - echo "Building parking-app..."
-      - go build -o bin/parking-app parking-app/main.go
+      - go build -o bin/parking-app main.go
       - echo "Build completed!"
 
   clean:
